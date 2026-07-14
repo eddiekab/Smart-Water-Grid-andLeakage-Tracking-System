@@ -98,3 +98,17 @@ BEGIN
     VALUES ('Leak_Events', 'INSERT', USER);
 END;
 /
+
+-- This package acts as a central library for all Smart Water Grid operations.
+-- It groups related procedures to improve code organization and maintainability.
+CREATE OR REPLACE PACKAGE pkg_water_grid AS
+    
+    -- Procedure to safely add a new leak record to the system
+    PROCEDURE Add_Leak(
+        p_event_id IN NUMBER, 
+        p_pipe_id IN NUMBER, 
+        p_severity IN VARCHAR2
+    );
+    
+END pkg_water_grid;
+/
