@@ -112,3 +112,20 @@ CREATE OR REPLACE PACKAGE pkg_water_grid AS
     
 END pkg_water_grid;
 /
+
+
+--the innovation part--
+-- INNOVATION: Sustainability Reporting Module
+-- This function estimates the volume of water lost based on the severity level 
+-- of the leak (High = 500 liters, Medium = 200, Low = 50).
+-- This helps the utility provider track environmental impact and resource waste.
+FUNCTION Estimate_Water_Loss(p_severity IN VARCHAR2) RETURN NUMBER IS
+    v_loss NUMBER;
+BEGIN
+    IF p_severity = 'High' THEN v_loss := 500;
+    ELSIF p_severity = 'Medium' THEN v_loss := 200;
+    ELSE v_loss := 50;
+    END IF;
+    RETURN v_loss;
+END Estimate_Water_Loss;
+/
