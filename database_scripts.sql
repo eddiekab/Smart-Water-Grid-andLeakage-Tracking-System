@@ -1,0 +1,82 @@
+-- PHASE V: TABLE CREATION
+-- Creating the core infrastructure for the Water Management System
+
+CREATE TABLE Sensors ( CREATE TABLE sensors(sensor_ID NUMBER PRIMARY KEY,location VARCHAR2(100),status VARCHAR(20)); );
+CREATE TABLE Pipe_Segments (  CREATE TABLE pipe_segments(pipe_ID NUMBER PRIMARY KEY,material VARCHAR2(50),sensor_ID NUMBER,CONSTRAINT fk_sensor_link FOREIGN KEY (sensor_ID) REFERENCES sensors(sensor_ID)););
+CREATE TABLE Leak_Events (  CREATE TABLE leak_events(event_ID NUMBER PRIMARY KEY,pipe_ID NUMBER,detection_date DATE,severity_level VARCHAR2(20),CONSTRAINT fk_pipe_link FOREIGN KEY(pipe_ID) REFERENCES pipe_segments(pipe_ID)); );
+-- i then inserted data
+ INSERT INTO sensors VALUES(101,'Gasba District-Mian Road','Active');
+ INSERT INTO pipe_segments VALUES(1,'PVC',101);
+ INSERT INTO leak_events VALUES(5001,1,TO_DATE('2026-07-13','YYYY-MM-DD'),'High');
+-- PHASE VI: STORED PROCEDURES
+--created the store procedure
+-- Automating data entry
+
+ CREATE OR REPLACE PROCEDURE Add_Leak(
+  2      p_pipe_id NUMBER,
+  3      p_severity VARCHAR2
+  4  ) IS
+  5  BEGIN
+  6      INSERT INTO Leak_Events (Event_ID, Pipe_ID, Detection_Date, Severity_Level)
+  7      VALUES ( (SELECT COUNT(*)+1 FROM Leak_Events), p_pipe_id, SYSDATE, p_severity);
+  8      COMMIT;
+  9      DBMS_OUTPUT.PUT_LINE('Leak event successfully logged.');
+ 10  EXCEPTION
+ 11      WHEN OTHERS THEN
+ 12          DBMS_OUTPUT.PUT_LINE('Error: Could not log leak.');
+ 13  END;
+ 14  /
+
+
+
+ --"I used a Procedure (Add_Leak) to simplify how we insert data, which reduces human error".
+   "I included Exception Handling (EXCEPTION) so that if something goes wrong,
+    the database gives a clean error message instead of crashing"
+
+
+
+-- PHASE VII: TRIGGERS
+-- Security layer or security guaed to prevent unauthorized changes
+
+
+CREATE OR REPLACE TRIGGER Security_Trigger
+BEFORE INSERT OR UPDATE OR DELETE ON Leak_Events
+BEGIN
+    -- This blocks changes if the current hour is between 9 AM and 5 PM
+    -- You can adjust these numbers to fit your specific 'off-hours' requirement
+    IF (TO_CHAR(SYSDATE, 'HH24') >= 9 AND TO_CHAR(SYSDATE, 'HH24') < 17) THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Security Violation: Data changes not allowed during working hours!');
+    END IF;
+END;
+/
+
+
+--"This is my Data Integrity and Security layer."
+
+--"It acts as a 'Security Guard' that prevents unauthorized 
+--or accidental data manipulation during critical business hours."
+
+--"I used RAISE_APPLICATION_ERROR to ensure the system gives a clear warning to the user if they 
+--try to perform an action when they aren't supposed to.
+
+--cursor part4 (reporting)
+
+SET SERVEROUTPUT ON;
+
+CREATE OR REPLACE PROCEDURE Report_High_Leaks IS
+    -- The cursor selects only the High severity leaks
+    CURSOR leak_cursor IS 
+        SELECT Event_ID, Pipe_ID FROM Leak_Events WHERE Severity_Level = 'High';
+    v_event_id Leak_Events.Event_ID%TYPE;
+    v_pipe_id  Leak_Events.Pipe_ID%TYPE;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('URGENT: HIGH SEVERITY LEAKS ');
+    OPEN leak_cursor;
+    LOOP
+        FETCH leak_cursor INTO v_event_id, v_pipe_id;
+        EXIT WHEN leak_cursor%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE('Event ID: ' || v_event_id || ' | Pipe ID: ' || v_pipe_id);
+    END LOOP;
+    CLOSE leak_cursor;
+END;
+/
